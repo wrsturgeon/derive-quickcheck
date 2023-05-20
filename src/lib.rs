@@ -153,7 +153,7 @@ fn make_trivial_prop(ident: &syn::Ident, generics: &syn::Generics) -> syn::Resul
                                                     syn::GenericParam::Lifetime(_) =>
                                                         syn::GenericArgument::Lifetime(
                                                             syn::parse2(quote! { 'static })
-                                                                .expect("qcderive-internal: couldn't parse `'static`")
+                                                                .expect("`derive-quickcheck`-internal: couldn't parse `'static`")
                                                         ),
                                                     syn::GenericParam::Const(_) =>
                                                         syn::GenericArgument::Const(
@@ -161,7 +161,7 @@ fn make_trivial_prop(ident: &syn::Ident, generics: &syn::Generics) -> syn::Resul
                                                                 syn::parse2(
                                                                     quote! { { 0 } } // TODO: no way to do this in general
                                                                 )
-                                                                .expect("qcderive-internal: couldn't parse `{ 0 }`")
+                                                                .expect("`derive-quickcheck`-internal: couldn't parse `{ 0 }`")
                                                             )
                                                         ),
                                                 })
@@ -187,7 +187,7 @@ fn make_trivial_prop(ident: &syn::Ident, generics: &syn::Generics) -> syn::Resul
 /// Potentially fail with a compilation error.
 fn from_derive_input(i: syn::DeriveInput) -> syn::Result<syn::ItemMod> {
     use heck::ToSnakeCase;
-    let mod_name = &(i.ident.to_string().to_snake_case() + "_qcderive");
+    let mod_name = &(i.ident.to_string().to_snake_case() + "_derive_quickcheck");
     Ok(syn::ItemMod {
         attrs: vec![],
         vis: syn::Visibility::Inherited,
@@ -214,9 +214,9 @@ fn from_derive_input(i: syn::DeriveInput) -> syn::Result<syn::ItemMod> {
 fn static_arbitrary(ty: syn::Type) -> syn::Expr {
     let mut e: syn::ExprCall = syn::parse2(
                         quote! { <A as ::quickcheck::Arbitrary>::arbitrary(g) },
-                    ).expect("qcderive-internal: Expected to be able to parse our internal implementation but couldn't");
-    let &mut syn::Expr::Path(ref mut p) = e.func.as_mut() else { panic!("qcderive-internal: Expected a path") }; // <A as ::quickcheck::Arbitrary>::arbitrary
-    let Some(qself) = p.qself.as_mut() else { panic!("qcderive-internal: Expected a qself (i.e. `<A as T>::...`)") };
+                    ).expect("`derive-quickcheck`-internal: Expected to be able to parse our internal implementation but couldn't");
+    let &mut syn::Expr::Path(ref mut p) = e.func.as_mut() else { panic!("`derive-quickcheck`-internal: Expected a path") }; // <A as ::quickcheck::Arbitrary>::arbitrary
+    let Some(qself) = p.qself.as_mut() else { panic!("`derive-quickcheck`-internal: Expected a qself (i.e. `<A as T>::...`)") };
     *qself.ty.as_mut() = ty;
     syn::Expr::Call(e)
 }
@@ -500,7 +500,7 @@ fn constrain_generics(generics: &syn::Generics) -> syn::Generics {
                     bounds: {
                         let mut b = t.bounds.clone();
                         b.push(syn::TypeParamBound::Trait(
-                            syn::parse2(quote! { ::quickcheck::Arbitrary }).expect("qcderive-internal: Expected to be able to parse `::quickcheck::Arbitrary` but couldn't."),
+                            syn::parse2(quote! { ::quickcheck::Arbitrary }).expect("`derive-quickcheck`-internal: Expected to be able to parse `::quickcheck::Arbitrary` but couldn't."),
                         ));
                         b
                     },
@@ -638,7 +638,9 @@ fn from_union(
         brace_token: delim_token!(Brace),
         items: vec![make_arbitrary_fn(vec![syn::Stmt::Macro(syn::StmtMacro {
             attrs: vec![],
-            mac: syn::parse2(quote! { todo!("`union`s not yet implemented in `qcderive`") })?,
+            mac: syn::parse2(
+                quote! { todo!("`union`s not yet implemented in ``derive-quickcheck`") },
+            )?,
             semi_token: None,
         })])?],
     })

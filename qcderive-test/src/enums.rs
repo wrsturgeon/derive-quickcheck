@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use qcderive::QuickCheck;
+use derive_quickcheck::QuickCheck;
 
 // Empty `enum` is uninstantiable so can't be implemented
 

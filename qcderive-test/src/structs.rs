@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use qcderive::QuickCheck;
+use derive_quickcheck::QuickCheck;
 
 #[derive(Clone, Debug, QuickCheck)]
 struct StructNoneSemicolon;
