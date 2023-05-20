@@ -12,6 +12,6 @@
 )]
 #![allow(clippy::blanket_clippy_restriction_lints)]
 
-// mod enums;
+mod enums;
 mod structs;
 // mod unions;

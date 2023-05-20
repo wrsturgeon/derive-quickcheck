@@ -6,4 +6,4 @@ publish = false
 
 [dependencies]
 qcderive = { path = ".." }
-quickcheck = "*"
+quickcheck = ">=1"

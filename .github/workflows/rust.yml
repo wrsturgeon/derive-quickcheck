@@ -22,4 +22,6 @@ jobs:
       run: cd qcderive-test && cargo test --verbose
     - name: Clippy
       run: cargo clippy --verbose
+    - name: Clippy (qcderive-test)
+      run: cd qcderive-test && cargo clippy --verbose
 

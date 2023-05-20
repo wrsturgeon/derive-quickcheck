@@ -24,6 +24,7 @@ struct BraceStructMany<A, B, C> {
 }
 
 #[derive(Clone, QuickCheck)]
+#[allow(clippy::empty_structs_with_brackets)]
 struct TupleStructEmpty();
 
 #[derive(Clone, QuickCheck)]

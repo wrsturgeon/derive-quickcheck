@@ -180,20 +180,6 @@ fn all_of(ident: syn::Ident, fields: syn::Fields) -> syn::Expr {
     }
 }
 
-/// Implement for an `enum`.
-#[allow(clippy::needless_pass_by_value, unused_variables)] // TODO: REMOVE
-fn from_enum(
-    attrs: Vec<syn::Attribute>,
-    ident: syn::Ident,
-    generics: syn::Generics,
-    d: syn::DataEnum,
-) -> syn::Result<syn::ItemImpl> {
-    bail!(
-        d.enum_token.span(),
-        "#[derive(QuickCheck)] not yet implemented for `struct`s"
-    )
-}
-
 /// `GenericParam` to `GenericArgument`.
 fn param2arg(p: syn::GenericParam) -> syn::GenericArgument {
     match p {
@@ -222,6 +208,20 @@ fn param2arg(p: syn::GenericParam) -> syn::GenericArgument {
             }))
         }
     }
+}
+
+/// Implement for an `enum`.
+#[allow(clippy::needless_pass_by_value, unused_variables)] // TODO: REMOVE
+fn from_enum(
+    attrs: Vec<syn::Attribute>,
+    ident: syn::Ident,
+    generics: syn::Generics,
+    d: syn::DataEnum,
+) -> syn::Result<syn::ItemImpl> {
+    bail!(
+        d.enum_token.span(),
+        "#[derive(QuickCheck)] not yet implemented for `enum`s"
+    )
 }
 
 /// Implement for a `struct`.
