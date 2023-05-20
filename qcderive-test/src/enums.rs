@@ -4,39 +4,39 @@
 
 use qcderive::QuickCheck;
 
-#[derive(Clone, QuickCheck)]
+#[derive(Clone, Debug, QuickCheck)]
 enum EnumEmpty {}
 
-#[derive(Clone, QuickCheck)]
+#[derive(Clone, Debug, QuickCheck)]
 enum EnumSingletonNoMembers {
     OnlyOption,
 }
 
-#[derive(Clone, QuickCheck)]
+#[derive(Clone, Debug, QuickCheck)]
 enum EnumSingletonOneMember<A> {
     OnlyOption(A),
 }
 
-#[derive(Clone, QuickCheck)]
+#[derive(Clone, Debug, QuickCheck)]
 enum EnumSingletonManyMembers<A, B, C> {
     OnlyOption(A, B, C),
 }
 
-#[derive(Clone, QuickCheck)]
+#[derive(Clone, Debug, QuickCheck)]
 enum EnumManyNoMembers {
     First,
     Second,
     Third,
 }
 
-#[derive(Clone, QuickCheck)]
+#[derive(Clone, Debug, QuickCheck)]
 enum EnumManyOneMember<A, B, C> {
     First(A),
     Second(B),
     Third(C),
 }
 
-#[derive(Clone, QuickCheck)]
+#[derive(Clone, Debug, QuickCheck)]
 enum EnumManyManyMembers<A, B, C> {
     First(A, B, C),
     Second(A, B, C),
