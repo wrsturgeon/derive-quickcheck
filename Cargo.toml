@@ -7,6 +7,8 @@ description = "Automatic `derive` for `quickcheck::Arbitrary`."
 license = "LGPL-3.0-or-later"
 repository = "https://github.com/wrsturgeon/qcderive"
 readme = "README.md"
+keywords = ["quickcheck", "testing", "derive", "arbitrary", "macro"]
+categories = ["development-tools::testing"]
 
 [lib]
 proc-macro = true
