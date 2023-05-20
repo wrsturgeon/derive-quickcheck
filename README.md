@@ -1,4 +1,4 @@
-# qcderive: `#[derive(QuickCheck)]`
+# `#[derive(QuickCheck)]`
 
 Automatically implements `quickcheck::Arbitrary` for any data structure.
 
