@@ -13,7 +13,9 @@
 )]
 #![allow(
     clippy::blanket_clippy_restriction_lints,
+    clippy::expect_used,
     clippy::implicit_return,
+    clippy::panic,
     clippy::question_mark_used
 )]
 
@@ -287,7 +289,7 @@ fn from_struct(
                 pound_token: single_token!(Pound),
                 bracket_token: delim_token!(Bracket),
                 style: syn::AttrStyle::Outer,
-                meta: syn::Meta::List(syn::parse2(quote! { inline(always) })?),
+                meta: syn::Meta::Path(syn::parse2(quote! { inline })?),
             }],
             vis: syn::Visibility::Inherited,
             defaultness: None,

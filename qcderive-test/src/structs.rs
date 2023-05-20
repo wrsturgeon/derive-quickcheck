@@ -1,5 +1,7 @@
 //! Testing all possible ways to write a `struct`.
 
+#![allow(dead_code)]
+
 use qcderive::QuickCheck;
 
 #[derive(Clone, QuickCheck)]
@@ -31,6 +33,6 @@ struct TupleStructSingleton<A>(A);
 struct TupleStructMany<A, B, C>(A, B, C);
 
 #[derive(Clone, QuickCheck)]
-struct WithConstParam<T, const N: usize>([T; N]);
+struct WithConstParam<T, const N: usize>(T, T, T);
 
 // QuickCheck disallows non-static lifetimes

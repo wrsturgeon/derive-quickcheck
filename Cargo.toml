@@ -1,7 +1,12 @@
 [package]
 name = "qcderive"
 version = "0.1.0"
+authors = ["Will Sturgeon <willstrgn@gmail.com>"]
 edition = "2021"
+description = "Automatic `derive` for `quickcheck::Arbitrary`."
+license = "LGPL-3.0-or-later"
+repository = "https://github.com/wrsturgeon/qcderive"
+readme = "README.md"
 
 [lib]
 proc-macro = true
