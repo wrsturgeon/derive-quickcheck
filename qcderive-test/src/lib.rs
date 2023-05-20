@@ -1,17 +1,11 @@
 //! Tests for common data structures.
 
 #![deny(warnings)]
-#![warn(
-    clippy::all,
-    clippy::missing_docs_in_private_items,
-    clippy::nursery,
-    clippy::pedantic,
-    clippy::restriction,
-    missing_docs,
-    rustdoc::all
+#![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::restriction)]
+#![allow(
+    clippy::blanket_clippy_restriction_lints,
+    clippy::missing_docs_in_private_items
 )]
-#![allow(clippy::blanket_clippy_restriction_lints)]
 
 mod enums;
 mod structs;
-// mod unions;

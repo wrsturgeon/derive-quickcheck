@@ -4,8 +4,7 @@
 
 use qcderive::QuickCheck;
 
-#[derive(Clone, Debug, QuickCheck)]
-enum EnumEmpty {}
+// Empty `enum` is uninstantiable so can't be implemented
 
 #[derive(Clone, Debug, QuickCheck)]
 enum EnumSingletonNoMembers {

@@ -8,11 +8,11 @@ Rules:
 - All type parameters (`<A, ...>`) must implement `quickcheck::Arbitrary`. If not, the struct will still work outside `quickcheck`, but you can't property-test it.
     - Caveat: We might in the future check if you actually use that type parameter, but for now, we don't (e.g. `PhantomData<A>` still requires `<A: Arbitrary>`).
 
-## Syntax
+## Structs
 
 ```rust
-//              vvvvvvvvvv
-#[derive(Clone, QuickCheck)]
+//                     vvvvvvvvvv
+#[derive(Clone, Debug, QuickCheck)]
 struct StructWithABunchOfEdgeCases<A, B, T, const N: usize> {
     a: A,
     b: B,
@@ -42,6 +42,43 @@ impl<
 }
 ```
 
-`enum`s are in the works, then `union`s.
+## Enums
+```rust
+#[derive(Clone, Debug, QuickCheck)]
+enum Enum<A, B, C> {
+    First(A, B, C),
+    Second(A, B, C),
+    Third(A, B, C),
+}
+```
+becomes
+```rust
+impl<
+    A: ::quickcheck::Arbitrary,
+    B: ::quickcheck::Arbitrary,
+    C: ::quickcheck::Arbitrary,
+> ::quickcheck::Arbitrary for Enum<A, B, C> {
+    #[inline]
+    fn arbitrary(g: &mut ::quickcheck::Gen) -> Self {
+            g.choose::<fn(&mut ::quickcheck::Gen) -> Self>(&[
+                (move |g| Self::First(
+                    <A as ::quickcheck::Arbitrary>::arbitrary(g),
+                    <B as ::quickcheck::Arbitrary>::arbitrary(g),
+                    <C as ::quickcheck::Arbitrary>::arbitrary(g),
+                )) as fn(&mut ::quickcheck::Gen) -> Self,
+                (move |g| Self::Second(
+                    <A as ::quickcheck::Arbitrary>::arbitrary(g),
+                    <B as ::quickcheck::Arbitrary>::arbitrary(g),
+                    <C as ::quickcheck::Arbitrary>::arbitrary(g),
+                )) as fn(&mut ::quickcheck::Gen) -> Self,
+                (move |g| Self::Third(
+                    <A as ::quickcheck::Arbitrary>::arbitrary(g),
+                    <B as ::quickcheck::Arbitrary>::arbitrary(g),
+                    <C as ::quickcheck::Arbitrary>::arbitrary(g),
+                )) as fn(&mut ::quickcheck::Gen) -> Self,
+            ]).unwrap()(g)
+        }
+    }
+```
 
 All credit for the incredible `quickcheck` library goes to its authors, not me! :)
