@@ -504,6 +504,8 @@ fn constrain_generics(generics: &syn::Generics) -> syn::Generics {
                         ));
                         b
                     },
+                    eq_token: None,
+                    default: None,
                     ..t.clone()
                 }),
                 &syn::GenericParam::Lifetime(_) | &syn::GenericParam::Const(_) => p.clone(),
