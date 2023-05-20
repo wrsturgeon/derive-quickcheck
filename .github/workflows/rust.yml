@@ -18,7 +18,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build
       run: cargo build --verbose
-    - name: Clippy
-      run: cargo clippy --verbose
     - name: Test
       run: cd qcderive-test && cargo test --verbose
+    - name: Clippy
+      run: cargo clippy --verbose
+
