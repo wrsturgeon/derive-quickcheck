@@ -1,14 +1,15 @@
 [package]
 name = "derive-quickcheck"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Will Sturgeon <willstrgn@gmail.com>"]
 edition = "2021"
 description = "Automatic `derive` for `quickcheck::Arbitrary`."
-license = "LGPL-3.0-or-later"
+license = "MPL-2.0"
 repository = "https://github.com/wrsturgeon/derive-quickcheck"
 readme = "README.md"
 keywords = ["quickcheck", "testing", "derive", "arbitrary", "macro"]
 categories = ["development-tools::testing"]
+build = "build.rs"
 
 [lib]
 proc-macro = true

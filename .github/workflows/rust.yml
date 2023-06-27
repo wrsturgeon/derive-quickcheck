@@ -16,12 +16,5 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose
-    - name: Test
-      run: cd qcderive-test && cargo test --verbose
-    - name: Clippy
-      run: cargo clippy --verbose
-    - name: Clippy (qcderive-test)
-      run: cd qcderive-test && cargo clippy --verbose
-
+    - name: ci.sh
+      run: GITHUB_ACTIONS=1 ./ci.sh

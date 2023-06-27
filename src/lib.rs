@@ -1,3 +1,9 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 //! Automatically derive `quickcheck::Arbitrary` with `#[derive(QuickCheck)]`.
 
 #![deny(warnings)]
@@ -22,6 +28,7 @@
 )]
 #![allow(clippy::needless_pass_by_value)] // TODO: REMOVE
 
+use proc_macro2::Span;
 use quote::{quote, ToTokens};
 use syn::spanned::Spanned;
 
@@ -58,7 +65,7 @@ macro_rules! delim_token {
 macro_rules! single_token {
     ($n:ident) => {
         syn::token::$n {
-            spans: [proc_macro2::Span::call_site()],
+            spans: [Span::call_site()],
         }
     };
 }
@@ -77,7 +84,7 @@ macro_rules! punctuate {
 /// Make a `syn` identifier from a raw identifier.
 macro_rules! ident {
     ($i:ident) => {
-        syn::Ident::new(stringify!($i), proc_macro2::Span::call_site())
+        syn::Ident::new(stringify!($i), Span::call_site())
     };
 }
 
@@ -193,7 +200,7 @@ fn from_derive_input(i: syn::DeriveInput) -> syn::Result<syn::ItemMod> {
         vis: syn::Visibility::Inherited,
         unsafety: None,
         mod_token: syn::parse2(quote! { mod })?,
-        ident: syn::Ident::new(mod_name, proc_macro2::Span::call_site()),
+        ident: syn::Ident::new(mod_name, Span::call_site()),
         content: Some((
             delim_token!(Brace),
             vec![
@@ -213,7 +220,7 @@ fn from_derive_input(i: syn::DeriveInput) -> syn::Result<syn::ItemMod> {
 /// Call a type's static `arbitrary` function.
 fn static_arbitrary(ty: syn::Type) -> syn::Expr {
     let mut e: syn::ExprCall = syn::parse2(
-                        quote! { <A as ::quickcheck::Arbitrary>::arbitrary(g) },
+                        quote! { <A as ::quickcheck::Arbitrary>::arbitrary(&mut smaller_gen) },
                     ).expect("`derive-quickcheck`-internal: Expected to be able to parse our internal implementation but couldn't");
     let &mut syn::Expr::Path(ref mut p) = e.func.as_mut() else { panic!("`derive-quickcheck`-internal: Expected a path") }; // <A as ::quickcheck::Arbitrary>::arbitrary
     let Some(qself) = p.qself.as_mut() else { panic!("`derive-quickcheck`-internal: Expected a qself (i.e. `<A as T>::...`)") };
@@ -222,53 +229,226 @@ fn static_arbitrary(ty: syn::Type) -> syn::Expr {
 }
 
 /// Call `arbitrary` on all these fields and wrap it in the appropriate `{...}` or `(...)`.
+#[allow(clippy::too_many_lines)]
 fn all_of(path: syn::Path, fields: syn::Fields) -> syn::Expr {
     #[allow(clippy::expect_used, clippy::panic)]
+    let decr_size_by = fields.len();
     match fields {
         syn::Fields::Unit => syn::Expr::Path(syn::ExprPath {
             attrs: vec![],
             qself: None,
             path,
         }),
-        syn::Fields::Unnamed(members) => syn::Expr::Call(syn::ExprCall {
+        syn::Fields::Unnamed(members) => syn::Expr::Block(syn::ExprBlock {
             attrs: vec![],
-            func: Box::new(syn::Expr::Path(syn::ExprPath {
-                attrs: vec![],
-                qself: None,
-                path,
-            })),
-            paren_token: delim_token!(Paren),
-            args: members
-                .unnamed
-                .into_iter()
-                .map(move |f| static_arbitrary(f.ty))
-                .collect(),
-        }),
-        syn::Fields::Named(members) => syn::Expr::Struct(syn::ExprStruct {
-            attrs: vec![],
-            qself: None,
-            path,
-            brace_token: delim_token!(Brace),
-            fields: members
-                .named
-                .into_iter()
-                .map(move |f| syn::FieldValue {
-                    attrs: f.attrs,
-                    member: f.ident.map_or_else(
-                        || {
-                            syn::Member::Unnamed(syn::Index {
-                                index: u32::MAX,
-                                span: f.ty.span(),
-                            })
+            label: None,
+            block: syn::Block {
+                brace_token: delim_token!(Brace),
+                stmts: vec![
+                    syn::Stmt::Local(syn::Local {
+                        attrs: vec![],
+                        let_token: syn::token::Let {
+                            span: Span::call_site(),
                         },
-                        syn::Member::Named,
+                        pat: syn::Pat::Ident(syn::PatIdent {
+                            attrs: vec![],
+                            by_ref: None,
+                            mutability: Some(syn::token::Mut {
+                                span: Span::call_site(),
+                            }),
+                            ident: ident!(smaller_gen),
+                            subpat: None,
+                        }),
+                        init: Some(syn::LocalInit {
+                            eq_token: single_token!(Eq),
+                            expr: Box::new(syn::Expr::Call(syn::ExprCall {
+                                attrs: vec![],
+                                func: Box::new(syn::Expr::Path(syn::ExprPath {
+                                    attrs: vec![],
+                                    qself: None,
+                                    path: syn::Path {
+                                        leading_colon: Some(syn::token::PathSep {
+                                            spans: [Span::call_site(), Span::call_site()],
+                                        }),
+                                        segments: punctuate!(
+                                            syn::PathSegment {
+                                                ident: ident!(quickcheck),
+                                                arguments: syn::PathArguments::None
+                                            },
+                                            syn::PathSegment {
+                                                ident: ident!(Gen),
+                                                arguments: syn::PathArguments::None
+                                            },
+                                            syn::PathSegment {
+                                                ident: ident!(new),
+                                                arguments: syn::PathArguments::None
+                                            },
+                                        ),
+                                    },
+                                })),
+                                paren_token: delim_token!(Paren),
+                                args: punctuate!(syn::Expr::MethodCall(syn::ExprMethodCall {
+                                    attrs: vec![],
+                                    receiver: Box::new(syn::Expr::MethodCall(
+                                        syn::ExprMethodCall {
+                                            attrs: vec![],
+                                            receiver: Box::new(syn::Expr::Path(syn::ExprPath {
+                                                attrs: vec![],
+                                                qself: None,
+                                                path: syn::Path {
+                                                    leading_colon: None,
+                                                    segments: punctuate!(syn::PathSegment {
+                                                        ident: ident!(g),
+                                                        arguments: syn::PathArguments::None
+                                                    })
+                                                }
+                                            })),
+                                            dot_token: single_token!(Dot),
+                                            method: ident!(size),
+                                            turbofish: None,
+                                            paren_token: delim_token!(Paren),
+                                            args: punctuate!(),
+                                        }
+                                    )),
+                                    dot_token: single_token!(Dot),
+                                    method: ident!(saturating_sub),
+                                    turbofish: None,
+                                    paren_token: delim_token!(Paren),
+                                    args: punctuate![syn::Expr::Lit(syn::ExprLit {
+                                        attrs: vec![],
+                                        lit: syn::Lit::Verbatim(
+                                            proc_macro2::Literal::usize_unsuffixed(decr_size_by)
+                                        )
+                                    })]
+                                })),
+                            })),
+                            diverge: None,
+                        }),
+                        semi_token: single_token!(Semi),
+                    }),
+                    syn::Stmt::Expr(
+                        syn::Expr::Call(syn::ExprCall {
+                            attrs: vec![],
+                            func: Box::new(syn::Expr::Path(syn::ExprPath {
+                                attrs: vec![],
+                                qself: None,
+                                path,
+                            })),
+                            paren_token: delim_token!(Paren),
+                            args: members
+                                .unnamed
+                                .into_iter()
+                                .map(move |f| static_arbitrary(f.ty))
+                                .collect(),
+                        }),
+                        None,
                     ),
-                    colon_token: f.colon_token,
-                    expr: static_arbitrary(f.ty),
-                })
-                .collect(),
-            dot2_token: None,
-            rest: None,
+                ],
+            },
+        }),
+        syn::Fields::Named(members) => syn::Expr::Block(syn::ExprBlock {
+            attrs: vec![],
+            label: None,
+            block: syn::Block {
+                brace_token: delim_token!(Brace),
+                stmts: vec![
+                    syn::Stmt::Local(syn::Local {
+                        attrs: vec![],
+                        let_token: syn::token::Let {
+                            span: Span::call_site(),
+                        },
+                        pat: syn::Pat::Ident(syn::PatIdent {
+                            attrs: vec![],
+                            by_ref: None,
+                            mutability: Some(syn::token::Mut {
+                                span: Span::call_site(),
+                            }),
+                            ident: ident!(smaller_gen),
+                            subpat: None,
+                        }),
+                        init: Some(syn::LocalInit {
+                            eq_token: single_token!(Eq),
+                            expr: Box::new(syn::Expr::Call(syn::ExprCall {
+                                attrs: vec![],
+                                func: Box::new(syn::Expr::Path(syn::ExprPath {
+                                    attrs: vec![],
+                                    qself: None,
+                                    path: syn::Path {
+                                        leading_colon: Some(syn::token::PathSep {
+                                            spans: [Span::call_site(), Span::call_site()],
+                                        }),
+                                        segments: punctuate!(
+                                            syn::PathSegment {
+                                                ident: ident!(quickcheck),
+                                                arguments: syn::PathArguments::None
+                                            },
+                                            syn::PathSegment {
+                                                ident: ident!(Gen),
+                                                arguments: syn::PathArguments::None
+                                            },
+                                            syn::PathSegment {
+                                                ident: ident!(new),
+                                                arguments: syn::PathArguments::None
+                                            },
+                                        ),
+                                    },
+                                })),
+                                paren_token: delim_token!(Paren),
+                                args: punctuate!(syn::Expr::MethodCall(syn::ExprMethodCall {
+                                    attrs: vec![],
+                                    receiver: Box::new(syn::Expr::Path(syn::ExprPath {
+                                        attrs: vec![],
+                                        qself: None,
+                                        path: syn::Path {
+                                            leading_colon: None,
+                                            segments: punctuate!(syn::PathSegment {
+                                                ident: ident!(g),
+                                                arguments: syn::PathArguments::None
+                                            })
+                                        }
+                                    })),
+                                    dot_token: single_token!(Dot),
+                                    method: ident!(size),
+                                    turbofish: None,
+                                    paren_token: delim_token!(Paren),
+                                    args: punctuate!(),
+                                })),
+                            })),
+                            diverge: None,
+                        }),
+                        semi_token: single_token!(Semi),
+                    }),
+                    syn::Stmt::Expr(
+                        syn::Expr::Struct(syn::ExprStruct {
+                            attrs: vec![],
+                            qself: None,
+                            path,
+                            brace_token: delim_token!(Brace),
+                            fields: members
+                                .named
+                                .into_iter()
+                                .map(move |f| syn::FieldValue {
+                                    attrs: f.attrs,
+                                    member: f.ident.map_or_else(
+                                        || {
+                                            syn::Member::Unnamed(syn::Index {
+                                                index: u32::MAX,
+                                                span: f.ty.span(),
+                                            })
+                                        },
+                                        syn::Member::Named,
+                                    ),
+                                    colon_token: f.colon_token,
+                                    expr: static_arbitrary(f.ty),
+                                })
+                                .collect(),
+                            dot2_token: None,
+                            rest: None,
+                        }),
+                        None,
+                    ),
+                ],
+            },
         }),
     }
 }
@@ -276,7 +456,8 @@ fn all_of(path: syn::Path, fields: syn::Fields) -> syn::Expr {
 /// Choose one of many variants and call `arbitrary` on all its members.
 #[allow(clippy::too_many_lines)]
 fn one_of(
-    variants: syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
+    variants: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
+    max_len: usize,
 ) -> syn::Result<syn::Expr> {
     if variants.is_empty() {
         bail!(
@@ -289,7 +470,7 @@ fn one_of(
         unsafety: None,
         abi: None,
         fn_token: syn::token::Fn {
-            span: proc_macro2::Span::call_site(),
+            span: Span::call_site(),
         },
         paren_token: delim_token!(Paren),
         inputs: punctuate!(syn::BareFnArg {
@@ -299,16 +480,13 @@ fn one_of(
                 and_token: single_token!(And),
                 lifetime: None,
                 mutability: Some(syn::token::Mut {
-                    span: proc_macro2::Span::call_site()
+                    span: Span::call_site()
                 }),
                 elem: Box::new(syn::Type::Path(syn::TypePath {
                     qself: None,
                     path: syn::Path {
                         leading_colon: Some(syn::token::PathSep {
-                            spans: [
-                                proc_macro2::Span::call_site(),
-                                proc_macro2::Span::call_site()
-                            ]
+                            spans: [Span::call_site(), Span::call_site()]
                         }),
                         segments: punctuate!(
                             syn::PathSegment {
@@ -327,10 +505,7 @@ fn one_of(
         variadic: None,
         output: syn::ReturnType::Type(
             syn::token::RArrow {
-                spans: [
-                    proc_macro2::Span::call_site(),
-                    proc_macro2::Span::call_site(),
-                ],
+                spans: [Span::call_site(), Span::call_site()],
             },
             Box::new(syn::Type::Path(syn::TypePath {
                 qself: None,
@@ -346,6 +521,7 @@ fn one_of(
     });
     let elems = variants
         .into_iter()
+        .filter(|v| v.fields.len() <= max_len)
         .map(|v| {
             syn::Expr::Cast(syn::ExprCast {
                 attrs: vec![],
@@ -359,7 +535,7 @@ fn one_of(
                         movability: None,
                         asyncness: None,
                         capture: Some(syn::token::Move {
-                            span: proc_macro2::Span::call_site(),
+                            span: Span::call_site(),
                         }),
                         or1_token: single_token!(Or),
                         inputs: punctuate!(syn::Pat::Ident(syn::PatIdent {
@@ -380,17 +556,17 @@ fn one_of(
                                         arguments: syn::PathArguments::None
                                     },
                                     syn::PathSegment {
-                                        ident: v.ident,
+                                        ident: v.ident.clone(),
                                         arguments: syn::PathArguments::None
                                     }
                                 ),
                             },
-                            v.fields,
+                            v.fields.clone(),
                         )),
                     })),
                 })),
                 as_token: syn::token::As {
-                    span: proc_macro2::Span::call_site(),
+                    span: Span::call_site(),
                 },
                 ty: Box::new(fn_type.clone()),
             })
@@ -417,10 +593,7 @@ fn one_of(
                 method: ident!(choose),
                 turbofish: Some(syn::AngleBracketedGenericArguments {
                     colon2_token: Some(syn::token::PathSep {
-                        spans: [
-                            proc_macro2::Span::call_site(),
-                            proc_macro2::Span::call_site(),
-                        ],
+                        spans: [Span::call_site(), Span::call_site()],
                     }),
                     lt_token: single_token!(Lt),
                     args: punctuate!(syn::GenericArgument::Type(fn_type)),
@@ -576,7 +749,40 @@ fn from_enum(
         self_ty: Box::new(make_self_ty(ident, generics)),
         brace_token: delim_token!(Brace),
         items: vec![make_arbitrary_fn(vec![syn::Stmt::Expr(
-            one_of(d.variants)?,
+            syn::Expr::Match(syn::ExprMatch {
+                attrs: vec![],
+                match_token: syn::parse2(quote! { match })?,
+                expr: Box::new(syn::parse2(quote! { g.size() })?),
+                brace_token: delim_token!(Brace),
+                arms: {
+                    let mut arms = vec![];
+                    for i in 0..d.variants.iter().fold(0, |acc, v| acc.max(v.fields.len())) {
+                        arms.push(syn::Arm {
+                            attrs: vec![],
+                            pat: syn::Pat::Lit(syn::ExprLit {
+                                attrs: vec![],
+                                lit: syn::Lit::Verbatim(proc_macro2::Literal::usize_unsuffixed(i)),
+                            }),
+                            guard: None,
+                            fat_arrow_token: syn::parse2(quote! { => })?,
+                            body: Box::new(one_of(&d.variants, i)?),
+                            comma: Some(syn::parse2(quote! { , })?),
+                        });
+                    }
+                    arms.push(syn::Arm {
+                        attrs: vec![],
+                        pat: syn::Pat::Wild(syn::PatWild {
+                            attrs: vec![],
+                            underscore_token: syn::parse2(quote! { _ })?,
+                        }),
+                        guard: None,
+                        fat_arrow_token: syn::parse2(quote! { => })?,
+                        body: Box::new(one_of(&d.variants, usize::MAX)?),
+                        comma: Some(syn::parse2(quote! { , })?),
+                    });
+                    arms
+                },
+            }),
             None,
         )])?],
     })
