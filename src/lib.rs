@@ -755,19 +755,42 @@ fn from_enum(
                 expr: Box::new(syn::parse2(quote! { g.size() })?),
                 brace_token: delim_token!(Brace),
                 arms: {
+                    let most_fields = d.variants.iter().fold(0, |acc, v| acc.max(v.fields.len()));
                     let mut arms = vec![];
-                    for i in 0..d.variants.iter().fold(0, |acc, v| acc.max(v.fields.len())) {
+                    if most_fields > 0 {
                         arms.push(syn::Arm {
                             attrs: vec![],
                             pat: syn::Pat::Lit(syn::ExprLit {
                                 attrs: vec![],
-                                lit: syn::Lit::Verbatim(proc_macro2::Literal::usize_unsuffixed(i)),
+                                lit: syn::Lit::Verbatim(proc_macro2::Literal::usize_unsuffixed(0)),
                             }),
                             guard: None,
                             fat_arrow_token: syn::parse2(quote! { => })?,
-                            body: Box::new(one_of(&d.variants, i)?),
+                            body: Box::new(one_of(&d.variants, 0)?),
                             comma: Some(syn::parse2(quote! { , })?),
                         });
+                        for i in 0..most_fields {
+                            arms.push(syn::Arm {
+                                attrs: vec![],
+                                pat: syn::Pat::Lit(syn::ExprLit {
+                                    attrs: vec![],
+                                    lit: syn::Lit::Verbatim(
+                                        proc_macro2::Literal::usize_unsuffixed(
+                                            i.checked_add(1).ok_or_else(|| {
+                                                syn::Error::new(
+                                                d.variants.span(),
+                                                "Ridiculously huge number of fields in a variant",
+                                            )
+                                            })?,
+                                        ),
+                                    ),
+                                }),
+                                guard: None,
+                                fat_arrow_token: syn::parse2(quote! { => })?,
+                                body: Box::new(one_of(&d.variants, i)?),
+                                comma: Some(syn::parse2(quote! { , })?),
+                            });
+                        }
                     }
                     arms.push(syn::Arm {
                         attrs: vec![],
