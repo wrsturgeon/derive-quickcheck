@@ -7,5 +7,6 @@ license = "MPL-2.0"
 build = "build.rs"
 
 [dependencies]
+breadth-first-zip = { path = "../../breadth-first-zip" }
 derive-quickcheck = { path = ".." }
 quickcheck = ">=1"
